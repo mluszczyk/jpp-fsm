@@ -45,7 +45,7 @@ symA l = A { states = [False, True]
 
 leftA :: Auto a q -> Auto a (Either q r)
 leftA auto = A { states = map Left (states auto)
-               , initStates = map Left (states auto)
+               , initStates = map Left (initStates auto)
                , isAccepting = either (isAccepting auto) (\_ -> False)
                , transition = \s l -> either (\s' -> map Left (transition auto s' l)) (\_ -> []) s
                }
@@ -58,15 +58,18 @@ sumA auto1 auto2 = A { states = (map Left (states auto1)) ++ (map Right (states 
                         either (\l -> map Left (transition auto1 l letter)) (\r -> map Right (transition auto2 r letter)) state
                      }
 
+switch :: Auto a q1 -> Auto a q2 -> [q1] -> [Either q1 q2]
+switch auto1 auto2 leftStates =
+    (map Left leftStates) ++
+    if (any (isAccepting auto1) leftStates) then
+        (map Right (initStates auto2)) else []
+
 thenA :: Auto a q1 -> Auto a q2 -> Auto a (Either q1 q2)
 thenA auto1 auto2 = A { states = (map Left (states auto1)) ++ (map Right (states auto2))
-                      , initStates = map Left (initStates auto1)
+                      , initStates = switch auto1 auto2 (initStates auto1)
                       , isAccepting = either (\_ -> False) (isAccepting auto2)
                       , transition = \state letter -> either
-                         (\l -> (map Left $ transition auto1 l letter) ++ (
-                            if (isAccepting auto1 l) then (map Right $ initStates auto2)
-                            else []
-                         ))
+                         (\l -> switch auto1 auto2 (transition auto1 l letter)) 
                          (\r -> map Right (transition auto2 r letter))
                          state
                       }

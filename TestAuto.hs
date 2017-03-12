@@ -10,9 +10,11 @@ leftA' = leftA
 testLeftA :: AutoDescr -> [AB] -> Bool
 testLeftA ad w =  accepts a w == accepts (leftA' a) w where a = fromAD ad
 
--- rightA' :: Auto a q -> Auto a (Either p q)                                        -- rightA' = rightA                      
--- testRightA :: AutoDescr -> [AB] -> Bool
--- testRightA ad w =  accepts a w == accepts (rightA a) w where a = fromAD ad
+testFromToList:: AutoDescr -> [AB] -> Bool
+testFromToList ad w =  accepts a w == accepts (
+    let (p1, p2, p3, p4) = toLists a in
+    fromLists p1 p2 p3 p4
+    ) w where a = fromAD ad
 
 testSumA1 :: AutoDescr -> AutoDescr -> [AB] -> Property
 testSumA1 ad1 ad2 w = accepts a1 w ==> 
@@ -34,16 +36,16 @@ write = putStr
 writeln = putStrLn
 
 main = do
-  -- writeln "testLeftA"
-  -- quickCheck testLeftA
-  -- writeln "testRightA"
-  -- quickCheck testRightA
+  writeln "testLeftA"
+  quickCheckWith stdArgs { maxSuccess = 5000 } testLeftA
+  writeln "testFromToList"
+  quickCheckWith stdArgs { maxSuccess = 5000 } testFromToList
   writeln "testSumA"
-  quickCheckWith stdArgs testSumA
+  quickCheckWith stdArgs { maxSuccess = 5000 } testSumA
   writeln "testSumA1"
-  quickCheckWith stdArgs { maxDiscardRatio = 100 } testSumA1
+  quickCheckWith stdArgs { maxSuccess = 5000 } testSumA1
   writeln "testThenA"
-  quickCheck  testThenA
+  quickCheckWith stdArgs { maxSuccess = 5000 }  testThenA
 ------------------------------------------------------------
 -- Hic sunt leones
 ------------------------------------------------------------
