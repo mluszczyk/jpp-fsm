@@ -1,17 +1,15 @@
 module Auto (Auto, accepts, emptyA, epsA, symA, leftA, sumA, thenA, fromLists, toLists) where
 
+import Data.List;
+
 data Auto a q = A { states      :: [q]
                   , initStates  :: [q]
                   , isAccepting :: q -> Bool
                   , transition  :: q -> a -> [q]
                   }
 
-unique_eq :: Eq t => [t] -> [t]
-unique_eq [] = []
-unique_eq (h:t) = h : unique_eq (filter (/= h) t)
-
 walk :: Eq q => Auto a q -> a -> [q] -> [q]
-walk auto letter states = unique_eq [end | start <- states, end <- (transition auto start letter)]
+walk auto letter states = nub [end | start <- states, end <- (transition auto start letter)]
 
 accepts_helper :: Eq q => Auto a q -> [a] -> [q] -> Bool
 accepts_helper auto _ [] = False
