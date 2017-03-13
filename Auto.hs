@@ -54,32 +54,33 @@ sumA :: Auto a q1 -> Auto a q2 -> Auto a (Either q1 q2)
 sumA auto1 auto2 = A { states = (map Left (states auto1)) ++ (map Right (states auto2))
                      , initStates = (map Left (initStates auto1)) ++ (map Right (initStates auto2))
                      , isAccepting = either (isAccepting auto1) (isAccepting auto2)
-                     , transition = \state letter -> 
+                     , transition = \state letter ->
                         either (\l -> map Left (transition auto1 l letter)) (\r -> map Right (transition auto2 r letter)) state
                      }
 
-switch :: Auto a q1 -> Auto a q2 -> [q1] -> [Either q1 q2]
-switch auto1 auto2 leftStates =
+-- adds init states of auto2 if in an accepting state of auto1
+teleport :: Auto a q1 -> Auto a q2 -> [q1] -> [Either q1 q2]
+teleport auto1 auto2 leftStates =
     (map Left leftStates) ++
     if (any (isAccepting auto1) leftStates) then
         (map Right (initStates auto2)) else []
 
 thenA :: Auto a q1 -> Auto a q2 -> Auto a (Either q1 q2)
 thenA auto1 auto2 = A { states = (map Left (states auto1)) ++ (map Right (states auto2))
-                      , initStates = switch auto1 auto2 (initStates auto1)
+                      , initStates = teleport auto1 auto2 (initStates auto1)
                       , isAccepting = either (\_ -> False) (isAccepting auto2)
                       , transition = \state letter -> either
-                         (\l -> switch auto1 auto2 (transition auto1 l letter)) 
+                         (\l -> teleport auto1 auto2 (transition auto1 l letter))
                          (\r -> map Right (transition auto2 r letter))
                          state
                       }
 
 fromLists :: (Eq q, Eq a) => [q] -> [q] -> [q] -> [(q,a,[q])] -> Auto a q
-fromLists states' initStates' acceptingStates' transitions' = 
+fromLists states' initStates' acceptingStates' transitions' =
   A { states = states'
     , initStates = initStates'
     , isAccepting = \state -> any (== state) acceptingStates'
-    , transition = \state letter -> 
+    , transition = \state letter ->
         case filter (\(start, letter', end_list) -> start == state && letter == letter') transitions' of
           [] -> []
           ((_, _, end_states):[]) -> end_states
@@ -93,16 +94,16 @@ toLists auto =
   , filter (isAccepting auto) (states auto)
   , [(start, letter, transitions) |
         start <- states auto,
-        letter <- [minBound..], 
+        letter <- [minBound..],
         let transitions = transition auto start letter,
         not (null transitions)
     ]
   )
 
 instance (Show a, Enum a, Bounded a, Show q) => Show (Auto a q) where
-  show auto = 
+  show auto =
     "fromLists " ++ (show states) ++
     " " ++ (show init) ++
     " " ++ (show accepting) ++
-    " " ++ (show transitions) 
+    " " ++ (show transitions)
     where (states, init, accepting, transitions) = toLists auto
