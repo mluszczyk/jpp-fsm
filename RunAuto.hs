@@ -17,11 +17,11 @@ instance Bounded Alpha where
 
 parseTransitionLine :: String -> Maybe (Int, [Alpha], [Int])
 parseTransitionLine s =
-  case (words s) of
+  case words s of
     (wState : wSymbols : wordsStates) ->
         let mState = readMaybe wState :: Maybe Int in
-        let mStates = (unpackListMaybe (map (readMaybe :: String -> Maybe Int)
-                                        wordsStates)) in
+        let mStates = unpackListMaybe (map (readMaybe :: String -> Maybe Int)
+                                       wordsStates) in
         case (mState, mStates) of
             (Just state, Just states) -> Just (state, map Alpha wSymbols, states)
             _ -> Nothing
@@ -49,15 +49,15 @@ parseProblemInput str =
            (_, _, Nothing, _) -> Left "list of accepting states"
            (_, _, _, Nothing) -> Left "transitions"
 
-unpack_transitions :: [(a, [b], c)] -> [(a, b, c)]
-unpack_transitions l = concat $ map (\(a, bList, c) -> [(a, b, c) | b <- bList]) l
+unpackTransitions :: [(a, [b], c)] -> [(a, b, c)]
+unpackTransitions = concatMap (\(a, bList, c) -> [(a, b, c) | b <- bList])
 
 handle :: String -> String
 handle string = either ("BAD INPUT on " ++) go (parseProblemInput string)
   where
     go (a, b, c, d, e) = show $ accepts auto word
       where
-        auto = fromLists [1..a] b c (unpack_transitions d)
+        auto = fromLists [1..a] b c (unpackTransitions d)
         word = e
 
 main = do
