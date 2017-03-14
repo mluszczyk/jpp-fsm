@@ -29,30 +29,24 @@ parseTransitionLine s =
 unpackListMaybe :: [Maybe x] -> Maybe [x]
 unpackListMaybe l = if any isNothing l then Nothing else Just (catMaybes l)
 
-parseProblemInput :: String -> Either String (Int, [Int], [Int], [(Int, [Alpha], [Int])], [Alpha])
-parseProblemInput str =
-    let list = filter (/= "") $ lines str in
-    if length list < 4 then Left "too few lines" else
-        let (lStateNum : lInitStates : lAccStates : rest) = list in
-        let lWord = last rest in
-        let linesTransitions = init rest in
-        let mNum = readMaybe lStateNum :: Maybe Int in
-        let mInitStates = readMaybe lInitStates :: Maybe [Int] in
-        let mAccStates = readMaybe lAccStates :: Maybe [Int] in
-        let mTransitions = (unpackListMaybe $ map parseTransitionLine linesTransitions) in
-        case (mNum, mInitStates, mAccStates, mTransitions) of
-           (Just num, Just initStates, Just accStates, Just transitions) ->
-              Right (num, initStates, accStates, transitions, map Alpha lWord)
-           (Nothing, _, _, _) -> Left "number of states"
-           (_, Nothing, _, _) -> Left "list of init states"
-           (_, _, Nothing, _) -> Left "list of accepting states"
-           (_, _, _, Nothing) -> Left "transitions"
+parseProblemInput :: String -> Maybe (Int, [Int], [Int], [(Int, [Alpha], [Int])], [Alpha])
+parseProblemInput str = case filter (not . null) (lines str) of
+  lStateNum : lInitStates : lAccStates : rest -> do
+     let lWord = last rest
+         linesTransitions = init rest
+     num <- readMaybe lStateNum
+     initStates <- readMaybe lInitStates
+     accStates <- readMaybe lAccStates
+     transitions <- mapM parseTransitionLine linesTransitions
+     pure $ (num, initStates, accStates, transitions, Alpha <$> lWord)
+  _ -> Nothing
+
 
 unpackTransitions :: [(a, [b], c)] -> [(a, b, c)]
 unpackTransitions = concatMap (\(a, bList, c) -> [(a, b, c) | b <- bList])
 
 handle :: String -> String
-handle string = either ("BAD INPUT on " ++) go (parseProblemInput string)
+handle string = maybe "BAD INPUT" go (parseProblemInput string)
   where
     go (a, b, c, d, e) = show $ accepts auto word
       where
