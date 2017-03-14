@@ -1,6 +1,6 @@
 module Auto (Auto, accepts, emptyA, epsA, symA, leftA, sumA, thenA, fromLists, toLists) where
 
-import Data.List;
+import Data.List (nub);
 
 data Auto a q = A { states      :: [q]
                   , initStates  :: [q]
@@ -81,8 +81,7 @@ fromLists states' initStates' acceptingStates' transitions' =
     , transition = \state letter ->
         case filter (\(start, letter', end_list) -> start == state && letter == letter') transitions' of
           [] -> []
-          ((_, _, end_states):[]) -> end_states
-          _ -> error "incorrect definition"
+          r -> concat $ map (\(_, _, end_states) -> end_states) r
     }
 
 toLists :: (Enum a,Bounded a) => Auto a q -> ([q],[q],[q],[(q,a,[q])])
