@@ -1,6 +1,6 @@
 module Auto (Auto, accepts, emptyA, epsA, symA, leftA, sumA, thenA, fromLists, toLists) where
 
-import Data.List (nub);
+import Data.List (nub)
 
 data Auto a q = A { states      :: [q]
                   , initStates  :: [q]
@@ -8,17 +8,14 @@ data Auto a q = A { states      :: [q]
                   , transition  :: q -> a -> [q]
                   }
 
-walk :: Eq q => Auto a q -> a -> [q] -> [q]
-walk auto letter states = nub [end | start <- states, end <- transition auto start letter]
-
-acceptsHelper :: Eq q => Auto a q -> [a] -> [q] -> Bool
-acceptsHelper auto _ [] = False
-acceptsHelper auto [] cur_states = any (isAccepting auto) cur_states
-acceptsHelper auto (word_head:word_tail) cur_states =
-    acceptsHelper auto word_tail (walk auto word_head cur_states)
 
 accepts :: Eq q => Auto a q -> [a] -> Bool
-accepts auto word = acceptsHelper auto word (initStates auto)
+accepts auto word =
+  any (isAccepting auto) finalStates
+  where
+    finalStates = foldl go (initStates auto) word
+    go states letter =
+      nub [end | start <- states, end <- transition auto start letter]
 
 emptyA :: Auto a ()
 emptyA = A { states = [()]
@@ -56,22 +53,21 @@ sumA auto1 auto2 = A { states = map Left (states auto1) ++ map Right (states aut
                         either (\l -> map Left (transition auto1 l letter)) (\r -> map Right (transition auto2 r letter)) state
                      }
 
--- adds init states of auto2 if in an accepting state of auto1
-teleport :: Auto a q1 -> Auto a q2 -> [q1] -> [Either q1 q2]
-teleport auto1 auto2 leftStates =
-    map Left leftStates ++
-    if any (isAccepting auto1) leftStates then
-        map Right (initStates auto2) else []
-
 thenA :: Auto a q1 -> Auto a q2 -> Auto a (Either q1 q2)
 thenA auto1 auto2 = A { states = map Left (states auto1) ++ map Right (states auto2)
-                      , initStates = teleport auto1 auto2 (initStates auto1)
+                      , initStates = teleport (initStates auto1)
                       , isAccepting = either (const False) (isAccepting auto2)
                       , transition = \state letter -> either
-                         (\l -> teleport auto1 auto2 (transition auto1 l letter))
+                         (\l -> teleport (transition auto1 l letter))
                          (\r -> map Right (transition auto2 r letter))
                          state
                       }
+                      -- adds init states of auto2 if in an accepting state of auto1
+                      where
+                        teleport leftStates =
+                          map Left leftStates ++
+                          if any (isAccepting auto1) leftStates then
+                            map Right (initStates auto2) else []
 
 fromLists :: (Eq q, Eq a) => [q] -> [q] -> [q] -> [(q,a,[q])] -> Auto a q
 fromLists states' initStates' acceptingStates' transitions' =

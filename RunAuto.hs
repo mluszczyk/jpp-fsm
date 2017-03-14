@@ -1,11 +1,10 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
-import Text.Read
-import System.Environment
 import Data.List
-import Data.List.Split
-import System.Exit
 import Data.Maybe (isNothing, catMaybes)
+import System.Environment
+import System.Exit
+import Text.Read
 
 import Auto
 
@@ -32,7 +31,7 @@ unpackListMaybe l = if any isNothing l then Nothing else Just (catMaybes l)
 
 parseProblemInput :: String -> Either String (Int, [Int], [Int], [(Int, [Alpha], [Int])], [Alpha])
 parseProblemInput str =
-    let list = filter (/= "") $ splitOn "\n" str in
+    let list = filter (/= "") $ lines str in
     if length list < 4 then Left "too few lines" else
         let (lStateNum : lInitStates : lAccStates : rest) = list in
         let lWord = last rest in
