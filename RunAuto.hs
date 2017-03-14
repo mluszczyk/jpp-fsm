@@ -51,10 +51,11 @@ unpackTransitions :: [(a, [b], c)] -> [(a, b, c)]
 unpackTransitions = concatMap (\(a, bList, c) -> [(a, b, c) | b <- bList])
 
 handle :: String -> String
-handle string = maybe "BAD INPUT" go mProblemInputValidated
+handle string = maybe "BAD INPUT" go mProblemInput
   where
-    mProblemInputValidated = maybe mProblemInput (\i -> if isValidProblemInput i then Just i else Nothing) mProblemInput
-    mProblemInput = parseProblemInput string
+    mProblemInput = case (parseProblemInput string) of
+      Just input | isValidProblemInput input -> Just input
+      _ -> Nothing
     go (a, b, c, d, e) = show $ accepts auto word
       where
         auto = fromLists [1..a] b c (unpackTransitions d)
