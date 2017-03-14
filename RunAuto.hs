@@ -1,7 +1,5 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
-import Data.List
-import Data.Maybe (isNothing, catMaybes)
 import System.Environment
 import System.Exit
 import Text.Read
@@ -13,21 +11,13 @@ instance Bounded Alpha where
     minBound = Alpha 'A'
     maxBound = Alpha 'Z'
 
-
 parseTransitionLine :: String -> Maybe (Int, [Alpha], [Int])
-parseTransitionLine s =
-  case words s of
-    (wState : wSymbols : wordsStates) ->
-        let mState = readMaybe wState :: Maybe Int in
-        let mStates = unpackListMaybe (map (readMaybe :: String -> Maybe Int)
-                                       wordsStates) in
-        case (mState, mStates) of
-            (Just state, Just states) -> Just (state, map Alpha wSymbols, states)
-            _ -> Nothing
-    _ -> Nothing
-
-unpackListMaybe :: [Maybe x] -> Maybe [x]
-unpackListMaybe l = if any isNothing l then Nothing else Just (catMaybes l)
+parseTransitionLine s = case words s of
+  (wState : wSymbols : wordsStates) -> do
+     state <- readMaybe wState
+     states <- mapM readMaybe wordsStates
+     pure (state, map Alpha wSymbols, states)
+  _ -> Nothing
 
 parseProblemInput :: String -> Maybe (Int, [Int], [Int], [(Int, [Alpha], [Int])], [Alpha])
 parseProblemInput str = case filter (not . null) (lines str) of
@@ -38,9 +28,8 @@ parseProblemInput str = case filter (not . null) (lines str) of
      initStates <- readMaybe lInitStates
      accStates <- readMaybe lAccStates
      transitions <- mapM parseTransitionLine linesTransitions
-     pure $ (num, initStates, accStates, transitions, Alpha <$> lWord)
+     pure (num, initStates, accStates, transitions, map Alpha lWord)
   _ -> Nothing
-
 
 unpackTransitions :: [(a, [b], c)] -> [(a, b, c)]
 unpackTransitions = concatMap (\(a, bList, c) -> [(a, b, c) | b <- bList])
