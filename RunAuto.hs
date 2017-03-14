@@ -6,7 +6,7 @@ import Text.Read
 
 import Auto
 
-newtype Alpha = Alpha Char deriving (Eq,Enum,Show)
+newtype Alpha = Alpha Char deriving (Eq,Enum,Show,Ord)
 instance Bounded Alpha where
     minBound = Alpha 'A'
     maxBound = Alpha 'Z'
@@ -31,12 +31,30 @@ parseProblemInput str = case filter (not . null) (lines str) of
      pure (num, initStates, accStates, transitions, map Alpha lWord)
   _ -> Nothing
 
+isValidProblemInput :: (Int, [Int], [Int], [(Int, [Alpha], [Int])], [Alpha])
+                       -> Bool
+isValidProblemInput (numStates, initStates, accStates, transitions, word) =
+  all isStateInRange initStates &&
+  all isStateInRange accStates &&
+  all isTransitionCorrect transitions &&
+  all isAlphaInRange word
+
+  where isStateInRange s = (1 <= s) && (s <= numStates)
+        isAlphaInRange a = (minBound <= a) && (a <= maxBound)
+        isTransitionCorrect :: (Int, [Alpha], [Int]) -> Bool
+        isTransitionCorrect (s, aa, ss) =
+          isStateInRange s &&
+          all isStateInRange ss &&
+          all isAlphaInRange aa
+
 unpackTransitions :: [(a, [b], c)] -> [(a, b, c)]
 unpackTransitions = concatMap (\(a, bList, c) -> [(a, b, c) | b <- bList])
 
 handle :: String -> String
-handle string = maybe "BAD INPUT" go (parseProblemInput string)
+handle string = maybe "BAD INPUT" go mProblemInputValidated
   where
+    mProblemInputValidated = maybe mProblemInput (\i -> if isValidProblemInput i then Just i else Nothing) mProblemInput
+    mProblemInput = parseProblemInput string
     go (a, b, c, d, e) = show $ accepts auto word
       where
         auto = fromLists [1..a] b c (unpackTransitions d)
