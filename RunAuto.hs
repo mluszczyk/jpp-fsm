@@ -45,7 +45,9 @@ isValidProblemInput (numStates, initStates, accStates, transitions, word) =
         isTransitionCorrect (s, aa, ss) =
           isStateInRange s &&
           all isStateInRange ss &&
-          all isAlphaInRange aa
+          all isAlphaInRange aa &&
+          length aa >= 1 &&
+          length ss >= 1
 
 unpackTransitions :: [(a, [b], c)] -> [(a, b, c)]
 unpackTransitions = concatMap (\(a, bList, c) -> [(a, b, c) | b <- bList])
