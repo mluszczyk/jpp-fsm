@@ -46,8 +46,8 @@ isValidProblemInput (numStates, initStates, accStates, transitions, word) =
           isStateInRange s &&
           all isStateInRange ss &&
           all isAlphaInRange aa &&
-          length aa >= 1 &&
-          length ss >= 1
+          not (null aa) &&
+          not (null ss)
 
 unpackTransitions :: [(a, [b], c)] -> [(a, b, c)]
 unpackTransitions = concatMap (\(a, bList, c) -> [(a, b, c) | b <- bList])
@@ -55,7 +55,7 @@ unpackTransitions = concatMap (\(a, bList, c) -> [(a, b, c) | b <- bList])
 handle :: String -> String
 handle string = maybe "BAD INPUT" go mProblemInput
   where
-    mProblemInput = case (parseProblemInput string) of
+    mProblemInput = case parseProblemInput string of
       Just input | isValidProblemInput input -> Just input
       _ -> Nothing
     go (a, b, c, d, e) = show $ accepts auto word
