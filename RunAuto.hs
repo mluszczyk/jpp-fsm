@@ -1,5 +1,6 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
+import Data.List
 import System.Environment
 import System.Exit
 import Text.Read
@@ -31,20 +32,23 @@ parseProblemInput str = case filter (not . null) (lines str) of
      pure (num, initStates, accStates, transitions, map Alpha lWord)
   _ -> Nothing
 
-isValidProblemInput :: (Int, [Int], [Int], [(Int, [Alpha], [Int])], [Alpha])
-                       -> Bool
-isValidProblemInput (numStates, initStates, accStates, transitions, word) =
-  all isStateInRange initStates &&
-  all isStateInRange accStates &&
+extractStates :: [Int] -> [Int] -> [(Int, [Alpha], [Int])] -> [Int]
+extractStates initStates acceptingStates transitions =
+  nub (initStates ++
+       acceptingStates ++
+       map (\(s, _, _) -> s) transitions ++
+       concatMap (\(_, _, d) -> d) transitions)
+
+isValidProblemInput :: Int -> [Int] -> [Int] -> [Int] -> [(Int, [Alpha], [Int])] -> [Alpha] -> Bool
+isValidProblemInput numStates states initStates accStates transitions word =
+  (numStates >= 0) &&
+  (length states <= numStates) &&
   all isTransitionCorrect transitions &&
   all isAlphaInRange word
 
-  where isStateInRange s = (1 <= s) && (s <= numStates)
-        isAlphaInRange a = (minBound <= a) && (a <= maxBound)
+  where isAlphaInRange a = (minBound <= a) && (a <= maxBound)
         isTransitionCorrect :: (Int, [Alpha], [Int]) -> Bool
         isTransitionCorrect (s, aa, ss) =
-          isStateInRange s &&
-          all isStateInRange ss &&
           all isAlphaInRange aa &&
           not (null aa) &&
           not (null ss)
@@ -56,12 +60,16 @@ handle :: String -> String
 handle string = maybe "BAD INPUT" go mProblemInput
   where
     mProblemInput = case parseProblemInput string of
-      Just input | isValidProblemInput input -> Just input
+      Just (numStates, initStates, accStates, transitions, word) ->
+        let states = extractStates initStates accStates transitions in
+        if isValidProblemInput numStates states initStates accStates transitions word then
+          Just (states, initStates, accStates, transitions, word)
+        else
+          Nothing
       _ -> Nothing
-    go (a, b, c, d, e) = show $ accepts auto word
+    go (states, initStates, accStates, transitions, word) = show $ accepts auto word
       where
-        auto = fromLists [1..a] b c (unpackTransitions d)
-        word = e
+        auto = fromLists states initStates accStates (unpackTransitions transitions)
 
 main = do
    args <- getArgs
